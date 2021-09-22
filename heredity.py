@@ -146,49 +146,50 @@ def joint_probability(people, one_gene, two_genes, have_trait):
         * everyone in set `have_trait` has the trait, and
         * everyone not in set` have_trait` does not have the trait.
     """    
-    p = 1
+    p = float(1)
 
     for person in people:
-        genes = (
-            2 if person in two_genes else
-            1 if person in one_gene else
-            0
-        )
+
+        if person in two_genes:
+            genes = 2
+        elif person in one_gene:
+            genes = 1
+        else:
+            genes = 0
 
         trait = person in have_trait
-        mother = people[person]["mother"]
-        father = people[person]["father"]
+        madre = people[person]["mother"]
+        padre = people[person]["father"]
 
         # No hay datos de los padres, es la probabilidad incondicional
-        if mother is None and father is None:
+        if madre is None and padre is None:
             p *= PROBS["gene"][genes]
 
         # Si hay datos de los padres, 
         else:
-            heredaGen = {mother: 0, father: 0}
+            # heredaGen = {madre: 0, padre: 0}
+            if madre in two_genes:
+                pGenMadre = 1 - PROBS["mutation"]
+            elif madre in one_gene:
+                pGenMadre = 0.5
+            else:
+                pGenMadre = PROBS["mutation"]
 
-            for parent in heredaGen:
-                heredaGen[parent] = (
-                    # El padre tiene 2 genes, revisar el ejemplo de https://cs50.harvard.edu/ai/2020/projects/2/heredity/
-                    1 - PROBS["mutation"] if parent in two_genes else
+            if padre in two_genes:
+                pGenPadre = 1 - PROBS["mutation"]
+            elif padre in one_gene:
+                pGenPadre = 0.5
+            else:
+                pGenPadre = PROBS["mutation"]
 
-                    # El padre tiene 1 gen
-                    0.5 if parent in one_gene else
+            # revisar el ejemplo de https://cs50.harvard.edu/ai/2020/projects/2/heredity/
+            if genes == 2:
+                p*= (pGenPadre * pGenMadre)
+            elif genes == 1:
+                p*= ( (pGenMadre*(1-pGenPadre)) + (pGenPadre*(1-pGenMadre)) )
+            else:
+                p*= ( (1-pGenPadre)*(1-pGenMadre) )
 
-                    # Sin genes
-                    PROBS["mutation"]
-                )
-
-            p *= (
-                # revisar el ejemplo de https://cs50.harvard.edu/ai/2020/projects/2/heredity/
-                heredaGen[mother] * heredaGen[father] if genes == 2 else
-
-                heredaGen[mother] * (1 - heredaGen[father]) + (1 - heredaGen[mother]) * heredaGen[father] if genes == 1 else
-
-                (1 - heredaGen[mother]) * (1 - heredaGen[father])
-            )
-
-        # Compute probability that a person does or does not have a particular trait
         p *= PROBS["trait"][genes][trait]
 
     return p
